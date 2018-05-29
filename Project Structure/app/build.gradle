@@ -1,0 +1,71 @@
+apply plugin: 'com.android.application'
+apply plugin: 'walle'
+//apply plugin: 'com..android-apt'
+apply from: rootProject.file('quality.gradle')
+
+//读取配置的 buildSignChannelConfig.json 的信息
+import groovy.json.JsonSlurper
+def jsonPayload = new File("buildSignChannelConfig.json").text
+def slurper = new JsonSlurper()
+def configJsonObj = slurper.parseText(jsonPayload)
+
+android {
+
+    compileSdkVersion 'android-P'
+//    buildToolsVersion '25.0.2'
+    dexOptions {
+        //解决windows下真机调试，G问题
+        javaMaxHeapSize "4g"
+        preDexLibraries = false
+    }
+
+    defaultConfig {
+        //..
+    }
+
+    signingConfigs {
+        debug {
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+        release {
+            storeFile file("toys.jks")
+            storePassword configJsonObj['storePassword']
+            keyAlias configJsonObj['keyAlias']
+            keyPassword configJsonObj['keyPassword']
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+    buildTypes {
+        //..
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+//    productFlavors {
+//         defaultChannel{
+//
+//         }
+//        china {
+//        }
+//        international {
+//        }
+//    }
+}
+
+dependencies {
+    //..
+}
+
+walle {
+    apkOutputFolder = new File("${project.buildDir}/outputs/channels")
+    apkFileNameFormat = '${appName}-${packageName}-${channel}-${buildType}-v${versionName}-${versionCode}-${buildTime}-${flavorName}.apk'
+    //configFile与channelFile两者必须存在一个，否则无法生成渠道包。两者都存在时优先执行configFile
+    channelFile = new File("${project.getProjectDir()}/channel")
+    //configFile = new File("${project.getProjectDir()}/config.json")
+}
